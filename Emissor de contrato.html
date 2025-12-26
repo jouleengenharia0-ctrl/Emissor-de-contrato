@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Contrato Fotovoltaico - Joule Energia Solar</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* Estilos do Formulário */
+    body { font-family: Arial, Helvetica, sans-serif; background:#f2f2f2; }
+    .container { max-width: 1000px; margin: auto; background:#fff; padding: 30px; }
+    h1, h2, h3, h4 { text-align: center; }
+    label { font-weight: bold; display:block; margin-top:10px; }
+    input, select, textarea { width:100%; padding:8px; margin-top:4px; box-sizing: border-box; border: 1px solid #ccc; }
+    .btn { margin-top:10px; padding:10px; font-size:16px; border:none; cursor:pointer; }
+    .btn-page { background:#007bff; color:#fff; flex: 1; }
+    .btn-complete { background:#28a745; color:#fff; flex: 1; }
+    .input-group { display: flex; gap: 10px; }
+    .input-group > div { flex: 1; }
+    #previewImg { max-width: 100%; height: auto; margin-top: 10px; border: 1px solid #ccc; padding: 5px; display: none; }
+    hr { border-color: #ddd; margin: 20px 0; }
+    .button-group { display: flex; gap: 10px; margin-top: 20px; }
+    .readonly-field { background-color: #e9ecef; }
+    
+    /* Estilos do Contrato (para o PDF) */
+    .contrato-content { 
+        font-family: Arial, sans-serif;
+        font-size: 11px; 
+        line-height: 1.5; 
+        text-align: justify; 
+        width: 190mm; /* A4 width - margins */
+        margin: 0 auto; 
+        padding: 10mm 10mm; 
+        box-sizing: border-box;
+    }
+    
+    /* BLOCOS DE CONTEÚDO (DIVISÕES INTERNAS PARA RENDERIZAÇÃO) */
+    .pagina-logica {
+        height: 277mm; /* Altura próxima do A4 para visualização no HTML */
+        box-sizing: border-box;
+        overflow: hidden; 
+    }
+    
+    .contrato-content h4 { text-align: left; margin-bottom: 5px; margin-top: 15px; }
+    .contrato-content p { margin: 5px 0; }
+    .contrato-content ol, .contrato-content ul { margin: 5px 0 5px 20px; padding: 0; }
+    .assinaturas { margin-top: 60px; display:flex; justify-content:space-between; }
+    .assinaturas div { width:45%; text-align:center; }
+    .indent { margin-left: 20px; }
+
+    /* Estilos do Preview */
+    #pdfPreviewContainer { 
+        margin-top: 20px; 
+        border: 1px solid #ccc; 
+        height: 600px; 
+        overflow: hidden; 
+        position: relative;
+    }
+    #pdfPreviewFrame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: none;
+    }
+    .preview-placeholder { text-align: center; padding: 50px; color: #555; }
+    .error-message { color: red; font-weight: bold; text-align: center; padding: 10px; border: 1px solid red; margin-top: 10px; display: none; }
+    
+    #contrato-completo { 
+        margin-top: 40px; 
+        border: 1px solid #ddd;
+        background: #fff;
+        display: block;
+        height: auto;
+    }
+    
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <h2>Automatização de Contrato Fotovoltaico</h2>
+  
+
+  <label>Imagem / Descritivo dos Equipamentos (Primeira Página)</label>
+  <input type="file" id="imgEquip" accept="image/*" onchange="readURL(this)">
+  <img id="previewImg" alt="Pré-visualização do Descritivo">
+
+  <h4>Dados do Contratante</h4>
+  <div class="input-group">
+    <div><label>Nome Completo</label><input id="nome" value="Eliudenêr Diniz de Oliveira"></div>
+    <div><label>CPF</label><input id="cpf" value="262.442.684-15"></div>
+  </div>
+  <div class="input-group">
+    <div><label>Profissão</label><input id="profissao" value="Aposentada"></div>
+    <div><label>Estado Civil</label><input id="estado_civil" value="Solteira"></div>
+    <div><label>Nacionalidade</label><input id="nacionalidade" value="Brasileira"></div>
+  </div>
+  <label>Endereço Completo (Rua, Nº, Bairro, CEP)</label><input id="endereco" value="Rua Ivete de Oliveira Cardoso, 98, Mangabeira, CEP 58.055-030">
+  <div class="input-group">
+    <div><label>Cidade</label><input id="cidade" value="João Pessoa"></div>
+    <div><label>Estado</label><select id="estado"><option selected>PB</option><option>PE</option><option>RN</option><option>CE</option></select></div>
+  </div>
+
+  <h4>Dados do Projeto</h4>
+  <div class="input-group">
+    <div><label>Potência do Sistema (kWp)</label><input id="potencia" value="4,68"></div>
+    <div><label>Projeto Ref. / Controle</label><input id="projeto_ref" value="2025GD040PB"></div>
+    <div><label>Emissão</label><input id="data_emissao" type="date" value="2025-10-01"></div>
+  </div>
+
+  <h4>Dados dos Equipamentos (Garantias)</h4>
+  <div class="input-group">
+    <div><label>Fabricante dos Módulos/Painéis</label><input id="fabricante_modulos" value="RENEPV" oninput="preencherDadosContrato()"></div>
+    <div><label>Modelo dos Módulos/Painéis</label><input id="modelo_modulos" value="144 CEL" oninput="preencherDadosContrato()"></div>
+  </div>
+  <div class="input-group">
+    <div><label>Fabricante do Inversor</label><input id="fabricante_inversor" value="Sungrow" oninput="preencherDadosContrato()"></div>
+    <div><label>Modelo do Inversor</label><input id="modelo_inversor" value="2MPPT 220V 5 kW" oninput="preencherDadosContrato()"></div>
+  </div>
+
+  <h4>Valores e Modo de Pagamento (Cláusula Quarta)</h4>
+  <label>Valor Total do Contrato (R$)</label>
+  <input id="valor" value="40.000,00" onblur="formatCurrency(this)" oninput="calcular80_10_10()">
+
+  <label>Modo de Pagamento</label>
+  <select id="modo_pagamento" onchange="togglePaymentFields()">
+    <option value="cartao">Cartão de Crédito (Entrada + Parcelas)</option>
+    <option value="vista" selected>À Vista 80-10-10 (Transferência + Etapas)</option>
+    <option value="financiamento">Financiamento</option>
+  </select>
+
+  <div id="payment_cartao" style="display:none;">
+    <div class="input-group">
+      <div><label>Valor de Entrada / Pix (R$)</label><input id="valor_entrada_cartao" value="12.000,00" onblur="formatCurrency(this)"></div>
+      <div><label>Valor Final (Cartão) (R$)</label><input id="valor_cartao" value="3.500,00" onblur="formatCurrency(this)"></div>
+    </div>
+    <div class="input-group">
+      <div><label>Nº Parcelas Cartão</label><input id="num_parcelas" value="12"></div>
+      <div><label>Valor da Parcela Cartão (R$)</label><input id="valor_parcela" value="350,00" onblur="formatCurrency(this)"></div>
+    </div>
+  </div>
+
+  <div id="payment_vista">
+    <h5 style="color: #007bff; margin-top: 15px;">💰 80% À Vista no Ato da Assinatura</h5>
+    <label>Valor (80% - Calculado Automaticamente)</label>
+    <input id="valor_80_vista" value="32.000,00" class="readonly-field" readonly>
+    
+    <h5 style="color: #28a745; margin-top: 15px;">📦 10% na Entrega dos Materiais</h5>
+    <label>Valor (10% - Calculado Automaticamente)</label>
+    <input id="valor_entrega_materiais" value="4.000,00" class="readonly-field" readonly>
+    
+    <h5 style="color: #ffc107; margin-top: 15px;">⚡ 10% na Troca do Medidor</h5>
+    <label>Valor (10% - Calculado Automaticamente)</label>
+    <input id="valor_troca_medidor" value="4.000,00" class="readonly-field" readonly>
+  </div>
+
+  <div id="payment_financiamento" style="display:none;">
+    <label>Modelo / Instituição de Financiamento</label><input id="modelo_financiamento">
+    <label>Termos de Pagamento (Descreva os termos)</label><textarea id="termos_financiamento" rows="3" placeholder="Ex: Valor total financiado em 60x de R$ 300,00 via Banco do Brasil, com carência de 90 dias."></textarea>
+  </div>
+
+  <h4>Disposições Finais</h4>
+  <label>Foro do Contrato (Ex: Recife, Estado de Pernambuco)</label>
+  <input id="foro" value="Recife, Estado de Pernambuco">
+
+  <div class="button-group">
+    <button class="btn btn-page" onclick="gerarPDFCompleto(false)">Pré-Visualizar PDF Completo (Não Salva)</button>
+    <button class="btn btn-complete" onclick="gerarPDFCompleto(true)">Gerar PDF COMPLETO E SALVAR</button>
+  </div>
+
+  <h4 style="text-align: left; margin-top: 30px;">Pré-Visualizador do PDF</h4>
+  <div id="pdfPreviewContainer">
+      <div class="preview-placeholder">Clique em "Pré-Visualizar PDF Completo" para gerar e visualizar o arquivo aqui.</div>
+      <iframe id="pdfPreviewFrame"></iframe>
+  </div>
+  
+  <p class="error-message" id="errorMessage" style="display: none;">Houve um erro na geração do PDF. Por favor, verifique se todos os campos estão preenchidos e tente novamente. (Verifique o Console do Navegador para detalhes técnicos).</p>
+
+  <hr>
+  <h3 style="text-align: left;">Conteúdo do Contrato (Para Inspeção)</h3>
+
+  <div id="contrato-completo">
+    
+    <div id="page-1-content" class="contrato-content pagina-logica">
+        <p style="text-align: right;">Controle: <span id="c_controle_p1">1001-1</span><br>Emissão: <span id="c_data_emissao_p1">01-10-2025</span></p>
+
+        <h1>CONTRATO PARA FORNECIMENTO DE SOLUÇÃO DE ENGENHARIA PARA SISTEMA SOLAR FOTOVOLTAICO – INSTALAÇÃO E HOMOLOGAÇÃO</h1>
+        <p style="text-align: center;">PROJETO: <span id="c_projeto_ref_p1">2025GD040PB</span></p>
+        
+        <p>Pelo presente instrumento particular e na melhor forma de direito, as partes, a saber:</p>
+
+        <p><b>(I) CONTRATANTE:</b> <span id="c_nome_p1"></span>, <span id="c_nacionalidade_p1"></span>, <span id="c_profissao_p1"></span>, residente e domiciliado(a) na <span id="c_endereco_p1"></span>, <span id="c_cidade_p1"></span>, <span id="c_estado_p1"></span>. Inscrito(a) no CPF sob o nº <span id="c_cpf_p1"></span> ("doravante denominado "Contratante").</p>
+
+        <p><b>(II) CONTRATADA:</b> JOULELAB ENERGIA SOLAR LTDA, empresa com sede na Av. Nossa Senhora de Fátima, 1843, Sala 112, Torre, João Pessoa, Paraíba, CEP 58.040-380, inscrito no CNPJ sob o nº 39.970.300/0001-39, neste ato representada por sua proprietária Jeane Cardoso da Silva, empresária, casada, residente e domiciliada na Rua Visconde de Mauá, nº 417, Portal de Tibiri, Santa Rita/PB СЕР 58303-025, Inscrito no CPF sob o nº 098.678.274-22 e por Alexandre Carlos de Araújo Gomes, brasileiro, casado, engenheiro, residente, sendo este o engenheiro responsável, inscrito no CPF 092.128.834-43 ("doravante denominado "Contratada").</p>
+        
+        <h4>CLÁUSULA PRIMEIRA - DO OBJETO</h4>
+        <p>Resolvem a Contratante e a Contratada firmar o presente contrato para a elaboração e instalação de projeto de Sistema Solar Fotovoltaico:</p>
+        <p class="indent">1 Sistema com potência de <span id="c_potencia_sistema_p1"></span> kWp, a ser projetada e instalada pela Contratada, na unidade consumidora <span id="c_endereco_completo_objeto_p1"></span>.</p>
+        <p>Sendo o seguinte kit fotovoltaico fornecido:</p>
+        <div id="descritivo_equipamentos_p1" style="margin-bottom: 20px;"><p style="color:#007bff; font-weight:bold; text-align:center;">[DESCRIÇÃO DOS EQUIPAMENTOS - ANEXAR IMAGEM PARA INSERÇÃO AQUI]</p></div>
+        <p>O contrato será regido pelas cláusulas e condições seguintes:</p>
+
+        <h4>CLÁUSULA SEGUNDA - DA EXECUÇÃO</h4>
+        <p>2.1- Os equipamentos e serviços contratados deverão ser executados com restrita observância ao que dispõe na PROPOSTA COMERCIAL de controle <span id="c_controle_proposta_p1">1001-1-GD-MIC</span>, elaborada pela Contratada, que integra o presente instrumento.</p>
+        <p>2.1.1- Em caso de divergência entre o conteúdo e a proposta da Contratada e o contido neste contrato e demais elementos que integram, prevalecerão esses últimos.</p>
+    </div>
+
+    <div id="page-2-content" class="contrato-content pagina-logica">
+        <h4>CLÁUSULA TERCEIRA - DO PRAZO DE IMPLANTAÇÃO DA USINA E VIGÊNCIA</h4>
+        <p>3.1- O prazo de implantação da usina solar fotovoltaica é ditado pela aprovação de projeto, inspeção e troca de medidor pela concessionária de energia Energisa. O prazo para implantação é informado na proposta <span id="c_controle_proposta_p2">1001-1-GD-MIC</span>, emitida e aprovada pelo cliente, é de **30 dias com margem de erro de 5 dias para mais ou para menos**.</p>
+        <p>Ressalva:</p>
+        <ol>
+            <li>O padrão de entrada do cliente deverá estar externalizado.</li>
+            <li>Não deverá ter faturas em aberto vinculado ao CPF/CNPJ do cliente.</li>
+            <li>Todas as faturas deverão estar na mesma titularidade.</li>
+        </ol>
+        <p>3.2- O prazo de vigência do contrato é de **1 (um) ano**, contado a partir da autorização de operação por parte de concessionária local, que se dá a partir da troca do medidor de energia.</p>
+
+        <h4>CLÁUSULA QUARTA - DOS PREÇOS E CONDIÇÕES DE PAGAMENTO</h4>
+        <p>4.1- O valor tratado e acertado com o cliente através da proposta comercial de código <span id="c_codigo_proposta_p2"></span> é de <b>R$ <span id="c_valor_total_p2"></span></b> (<span id="c_valor_total_extenso_p2"></span>), a ser pago da seguinte forma:</p>
+        <div id="c_forma_pagamento_detalhe_p2">
+          </div>
+        <p>Dados bancários (se aplicável): Joulelab Energia Solar. Banco: Sicredi (código do banco 748); Agência: 2201; Conta: 16710-5; Beneficiária: JouleLab Energia Solar; Pix: 39.970.300/0001-39.</p>
+
+        <h4>CLÁUSULA QUINTA - DAS OBRIGAÇÕES DA CONTRATANTE</h4>
+        <p>5.1 Fornecer a Contratada toda e qualquer informação necessária ao desenvolvimento dos serviços objeto deste instrumento.</p>
+        <p>5.2 - Efetuar, no prazo previsto, o pagamento dos fornecimentos e serviços realizados.</p>
+        <p>5.3 - Franquear a Contratada, acesso a sua unidade. O horário previsto de trabalho será de segunda-feira a sábado de 8h às 17h, caso necessário, a contratada poderá utilizar o seguinte regime de trabalho, 7h às 18h e domingo de 8h às 12h, atendendo as leis trabalhistas previstas.</p>
+        <p>5.4-Disponibilizar um banheiro para o corpo técnico que fará a instalação do sistema.</p>
+        
+        <h4>CLÁUSULA SEXTA - DAS OBRIGAÇÕES DA CONTRATADA</h4>
+        <p>6.1- A Contratada deverá realizar suas atividades, de forma a assegurar que os serviços sejam prestados em estrito cumprimento de todas as leis e regulamentos aplicáveis na esfera federal, estadual e municipal.</p>
+        <p>6.2- A contratada deverá realizar o fornecimento de equipamentos e os serviços aqui contratados de acordo com a melhor técnica disponível no mercado com observância ao expresso e previamente autorizado pelo Contratante, assim como respeitando o disposto na legislação aplicável.</p>
+        <p>6.3-Cumprirem integralmente o presente instrumento, cabendo ainda a Contratada coordenação da execução dos serviços, responsabilizando-se, legal, administrativa e tecnicamente pelos mesmos.</p>
+        <p>6.4- Após o término da instalação do sistema solar fotovoltaico e operação definitiva do sistema, a Contratada continuará responsável pelo desempenho operacional do sistema solar fotovoltaico pelo prazo de **dois (2) anos**.</p>
+        <p>6.5- A contratada deverá empregar pessoal qualificado e habilitado para prestar os serviços de instalação, testes e manutenção.</p>
+        <p>6.6- A contratada deverá elaborar o projeto fotovoltaico, assim como documentos legais e realizar todo processo burocrático junto à concessionária.</p>
+        <p>6.7 A contratada fica responsável pelas responsabilidades trabalhistas, fiscais e tributárias dos seus colaboradores, desta forma isenta a contratante destas responsabilidades.</p>
+    </div>
+
+    <div id="page-3-content" class="contrato-content pagina-logica">
+        
+        <h4>CLÁUSULA SÉTIMA- FORÇA MAIOR</h4>
+        <p>7.1-Nenhuma das partes será responsabilizada pelo não cumprimento de suas obrigações motivado por evento de força maior.</p>
+        <p>7.1.1-A parte impedida de adimplir o contrato em função de um evento de força maior deverá notificar a outra, tão logo tome conhecimento da ocorrência do evento e de sua natureza, para que possa alegá-lo em seu favor. A falha em notificar no prazo assinalado será interpretada para todos os fins como inadimplemento contratual, aplicando-se, automaticamente, todas as consequências, legais ou contratuais, para essa hipótese.</p>
+
+        <h4>CLÁUSULA OITAVA- DESCUMPRIMENTO, PENALIDADES E RESCISÃO</h4>
+        <p>8.1- Se a Contratante, deixar de realizar algum pagamento devido à Contratada, sobre o valor em atraso poderá incidir multa compensatória de **1% (um por cento)** sobre o valor do pagamento, descontados os tributos.</p>
+        <p>8.2- A parte responsável pelo descumprimento do contrato será responsável pelo ressarcimento de prejuízo que possa ha ver ocorrido a outra parte, com juros e correções monetária, conforme previsto no item 8.1.</p>
+        <p>8.3- Caso ocorra o descrito no item 8.1 a contratada paralisará o andamento da obra ou cancelará o projeto junto à concessionária caso o valor não seja quitado no prazo de 5 dias úteis.</p>
+        <p>8.4- O presente contrato somente poderá ser rescindido por qualquer das partes por justo motivo (força maior - cláusula sétima), a qualquer tempo.</p>
+        <p>8.5- Caso a contratante rescinda contrato após a prestação de serviço pela contratada e estando tudo conforme previsto nesse contrato, a contratante ficará obrigada de cumprir o estabelecido na **Cláusula Quarta**.</p>
+        <p>8.6- Caso a contratada rescinda contrato antes ou depois da prestação de serviço, a mesma deverá arcar custos de implantação e gerenciamento do sistema.</p>
+        
+        <h4>CLÁUSULA NONA- DAS DISPOSIÇÕES GERAIS</h4>
+        <p>9.1- O presente Contrato é firmado em caráter irrevogável e irretratável, obrigando as partes a seus herdeiros e sucessores a qualquer título.</p>
+        <p>9.2-O não exercício ou a demora, por uma das partes, em exercer direito relativo a este Contrato não será tida como renuncia a esses direitos por essa parte ou como alteração deste Contrato.</p>
+        <p>9.3- Este contrato somente poderá ser modificado ou alterado mediante acordo por escrito entre as partes.</p>
+        <p>9.4-Nenhuma das poderá ceder ou de qualquer forma transferir qualquer dos direitos e obrigações aqui previstos sem o consentimento por escrito da outra parte.</p>
+        <p>9.5- As partes elegem o foro da comarca de <span id="c_foro_p4"></span>, para dirimir as controvérsias relativas ao presente Contrato, com exclusão de qualquer outro, por mais privilegiado de que seja.</p>
+        <p>9.6-Este Contrato estabelece o acordo definitivo das partes a respeito do seu objeto, revogando todos os entendimentos e acordos anteriores entre as partes.</p>
+        <p>9.7- Todas as comunicações e notificações entre as partes relativas a este contrato deverão ser feitas por e-mail.</p>
+    </div>
+
+    <div id="page-4-content" class="contrato-content pagina-logica">
+        
+        <h4>CLÁUSULA DÉCIMA- DAS GARANTIAS</h4>
+        <p>10.1 - Serviço de instalação de sistemas fotovoltaicos. **Um (1) ano para serviço e monitoramento**.</p>
+        <p>10.2 Painéis (Módulo) Fotovoltaico (Garantia do fabricante <span id="c_fabricante_modulos_p4">RENEPV</span>, modelo <span id="c_modelo_modulos_p4">144 CEL</span>). **Quinze (15) anos por defeito de fabricação**. Doze (12) anos 90% da potência nominal e 25 anos 70% da potência nominal.</p>
+        <p>10.3- Inversor, Fabricante <span id="c_fabricante_inversor_p4">Sungrow</span>, Modelo <span id="c_modelo_inversor_p4">2MPPT 220V 5 kW</span> (Garantia diretamente com o fabricante). **Dez (10) anos contra defeitos**.</p>
+        <p>Observação: A garantia deste equipamento é diretamente com o fornecedor pela nota fiscal.</p>
+
+        <h4>CLÁUSULA DÉCIMA PRIMEIRA - ACOMPANHAMENTO GERAÇÃO DE ENERGIA</h4>
+        <p>O sistema instalado terá capacidade de geração de energia média mensal de **550 kWh/mês** com uma variação de +5% e -5%. A potência do sistema solar fotovoltaico sofre redução gradual na sua capacidade de geração de energia elétrica, conforme curva de degradação previstas dos módulos / painéis fotovoltaicos: doze anos 90% da potencial nominal e 25 anos 70% de potência nominal.</p>
+
+        <div class="assinaturas">
+          <div>
+            ___________________________<br>
+            CONTRATADA<br>Joule Energia Solar<br>Alexandre Carlos de Araújo Gomes (CPF: 092.128.834-43)
+          </div>
+          <div>
+            ___________________________<br>
+            CONTRATANTE<br><span id="c_nome_assinatura_p4"></span> (CPF: <span id="c_cpf_assinatura_p4"></span>)
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Elementos principais
+const pagesToRender = ['page-1-content', 'page-2-content', 'page-3-content', 'page-4-content'];
+const errorMessage = document.getElementById('errorMessage');
+const previewFrame = document.getElementById('pdfPreviewFrame');
+const previewPlaceholder = document.querySelector('.preview-placeholder');
+
+// ===========================================
+// AQUI É ONDE VOCÊ DEVE COLOCAR SUA IMAGEM BASE64
+// ===========================================
+// Substitua a string abaixo pela sua imagem em base64
+// Formato: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+let papelTimbradoBase64 = "data:image/png;base64,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"; // Inicialmente null
+
+// Se quiser usar uma imagem padrão sempre, descomente a linha abaixo e cole sua base64:
+// papelTimbradoBase64 = "data:image/png;base64,SUA_IMAGEM_BASE64_AQUI";
+
+// Função para carregar papel timbrado via upload
+function carregarPapelTimbrado(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            papelTimbradoBase64 = e.target.result;
+            alert("Papel timbrado carregado com sucesso! Será aplicado no próximo PDF gerado.");
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        papelTimbradoBase64 = null;
+    }
+}
+
+// [FUNÇÕES DE PREENCHIMENTO E FORMATAÇÃO]
+
+function formatCurrency(input) {
+    let value = input.value.replace(/\D/g, ''); 
+    if (value.length === 0) {
+        input.value = '';
+        return;
+    }
+    let intPart = value.slice(0, -2);
+    let decimalPart = value.slice(-2);
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    input.value = `${intPart},${decimalPart}`;
+}
+
+function parseValorMonetario(valorStr) {
+    return parseFloat(valorStr.replace(/\./g, '').replace(',', '.')) || 0;
+}
+
+function formatarMoeda(valor) {
+    return valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function numeroParaExtenso(valor) {
+    const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+    const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+    const especiais = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+    const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+    
+    if (valor === 0) return 'zero';
+    
+    const valorInteiro = Math.floor(valor);
+    let resultado = '';
+    
+    const mil = Math.floor(valorInteiro / 1000);
+    const resto = valorInteiro % 1000;
+    
+    if (mil > 0) {
+        if (mil === 1) {
+            resultado = 'mil';
+        } else {
+            resultado = converterCentenas(mil) + ' mil';
+        }
+    }
+    
+    if (resto > 0) {
+        if (resultado) resultado += ' e ';
+        resultado += converterCentenas(resto);
+    }
+    
+    return resultado;
+    
+    function converterCentenas(num) {
+        if (num === 100) return 'cem';
+        
+        const c = Math.floor(num / 100);
+        const d = Math.floor((num % 100) / 10);
+        const u = num % 10;
+        
+        let texto = '';
+        
+        if (c > 0) texto = centenas[c];
+        
+        if (d === 1) {
+            if (texto) texto += ' e ';
+            texto += especiais[u];
+        } else {
+            if (d > 0) {
+                if (texto) texto += ' e ';
+                texto += dezenas[d];
+            }
+            if (u > 0) {
+                if (texto) texto += ' e ';
+                texto += unidades[u];
+            }
+        }
+        
+        return texto;
+    }
+}
+
+function calcular80_10_10() {
+    const valorTotalStr = document.getElementById('valor').value;
+    const valorTotal = parseValorMonetario(valorTotalStr);
+    
+    const oitentaPorcento = valorTotal * 0.80;
+    const dezPorcento = valorTotal * 0.10;
+    
+    document.getElementById('valor_80_vista').value = formatarMoeda(oitentaPorcento);
+    document.getElementById('valor_entrega_materiais').value = formatarMoeda(dezPorcento);
+    document.getElementById('valor_troca_medidor').value = formatarMoeda(dezPorcento);
+}
+
+function togglePaymentFields() {
+    const mode = document.getElementById('modo_pagamento').value;
+    document.getElementById('payment_cartao').style.display = 'none';
+    document.getElementById('payment_vista').style.display = 'none';
+    document.getElementById('payment_financiamento').style.display = 'none';
+
+    if (mode === 'cartao') {
+        document.getElementById('payment_cartao').style.display = 'block';
+    } else if (mode === 'vista') {
+        document.getElementById('payment_vista').style.display = 'block';
+    } else if (mode === 'financiamento') {
+        document.getElementById('payment_financiamento').style.display = 'block';
+    }
+}
+
+function readURL(input) {
+  const preview = document.getElementById('previewImg');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const dataUrl = e.target.result;
+      preview.src = dataUrl;
+      preview.style.display = 'block';
+      document.getElementById('descritivo_equipamentos_p1').innerHTML = `<img src="${dataUrl}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;"/>`;
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+    document.getElementById('descritivo_equipamentos_p1').innerHTML = '<p style="color:#007bff; font-weight:bold; text-align:center;">[DESCRIÇÃO DOS EQUIPAMENTOS - ANEXAR IMAGEM PARA INSERÇÃO AQUI]</p>';
+  }
+}
+
+function gerarTextoPagamento() {
+    const modo = document.getElementById('modo_pagamento').value;
+    let htmlContent = '';
+    
+    if (modo === 'cartao') {
+        const valorEntrada = document.getElementById('valor_entrada_cartao').value;
+        const valorCartao = document.getElementById('valor_cartao').value;
+        const numParcelas = document.getElementById('num_parcelas').value;
+        const valorParcela = document.getElementById('valor_parcela').value;
+
+        htmlContent = `<ol type="a">
+            <li>Pagamento equivalente a <b>R$ ${valorEntrada}</b> no ato da assinatura deste contrato via pix ou transferência bancária TED;</li>
+            <li>Pagamento equivalente a <b>R$ ${valorCartao}</b> no término da instalação. Esse valor ficou acordado ser em <b>${numParcelas}x</b> no cartão, ficando <b>${numParcelas}x parcelas de R$ ${valorParcela}</b>.</li>
+        </ol>`;
+    } else if (modo === 'vista') {
+        const valor80 = document.getElementById('valor_80_vista').value;
+        const valorEntrega = document.getElementById('valor_entrega_materiais').value;
+        const valorMedidor = document.getElementById('valor_troca_medidor').value;
+
+        htmlContent = `<ol type="a" style="margin-left: 20px;">
+            <li>Pagamento equivalente a <b>R$ ${valor80}</b> via transferência/PIX no ato da assinatura deste contrato;</li>
+            <li>Pagamento equivalente a <b>R$ ${valorEntrega}</b> no ato da entrega dos materiais;</li>
+            <li>Pagamento equivalente a <b>R$ ${valorMedidor}</b> no ato da troca do medidor pela concessionária.</li>
+        </ol>`;
+    } else if (modo === 'financiamento') {
+        const modelo = document.getElementById('modelo_financiamento').value;
+        const termos = document.getElementById('termos_financiamento').value.replace(/\n/g, '<br>');
+
+        htmlContent = `<p class="indent">O valor total do projeto será financiado junto à instituição <b>${modelo || '[Não Informado]'}</b>, conforme os seguintes termos e condições: <b>${termos || '[Termos de Pagamento Pendentes]'}</b></p>
+        <p class="indent">O presente contrato está sujeito à aprovação final do financiamento pela instituição financeira.</p>`;
+    }
+    
+    return htmlContent;
+}
+
+function preencherDadosContrato() {
+    const nome = document.getElementById('nome').value;
+    const cpf = document.getElementById('cpf').value;
+    const endereco = document.getElementById('endereco').value;
+    const cidade = document.getElementById('cidade').value;
+    const estado = document.getElementById('estado').value;
+    const profissao = document.getElementById('profissao').value;
+    const nacionalidade = document.getElementById('nacionalidade').value;
+    const potencia = document.getElementById('potencia').value;
+    const valor = document.getElementById('valor').value;
+    const foro = document.getElementById('foro').value;
+    const projeto_ref = document.getElementById('projeto_ref').value;
+    const data_emissao_input = document.getElementById('data_emissao').value;
+    const data_emissao = data_emissao_input ? new Date(data_emissao_input).toLocaleDateString('pt-BR') : 'Data Inválida';
+    
+    const fabricante_modulos = document.getElementById('fabricante_modulos').value;
+    const modelo_modulos = document.getElementById('modelo_modulos').value;
+    const fabricante_inversor = document.getElementById('fabricante_inversor').value;
+    const modelo_inversor = document.getElementById('modelo_inversor').value;
+    
+    const endereco_completo = `${endereco}, ${cidade}, ${estado}`; 
+    const textoPagamento = gerarTextoPagamento();
+    
+    const codigo_proposta = projeto_ref.includes('-GD-MIC') ? projeto_ref : projeto_ref.replace('GD', 'GD-MIC');
+    
+    const valorNumerico = parseValorMonetario(valor);
+    const valorExtenso = numeroParaExtenso(valorNumerico);
+
+    const targets = [
+        {id: 'c_nome_p1', value: nome}, {id: 'c_cpf_p1', value: cpf}, {id: 'c_endereco_p1', value: endereco},
+        {id: 'c_cidade_p1', value: cidade}, {id: 'c_estado_p1', value: estado}, {id: 'c_profissao_p1', value: profissao},
+        {id: 'c_nacionalidade_p1', value: nacionalidade}, {id: 'c_potencia_sistema_p1', value: potencia},
+        {id: 'c_endereco_completo_objeto_p1', value: endereco_completo}, {id: 'c_projeto_ref_p1', value: projeto_ref},
+        {id: 'c_data_emissao_p1', value: data_emissao}, {id: 'c_valor_total_p2', value: valor},
+        {id: 'c_valor_total_extenso_p2', value: valorExtenso},
+        {id: 'c_codigo_proposta_p2', value: codigo_proposta},
+        {id: 'c_nome_assinatura_p4', value: nome}, {id: 'c_cpf_assinatura_p4', value: cpf}, {id: 'c_foro_p4', value: foro},
+        {id: 'c_controle_proposta_p1', value: codigo_proposta},
+        {id: 'c_controle_proposta_p2', value: codigo_proposta},
+        {id: 'c_controle_p1', value: codigo_proposta},
+        {id: 'c_fabricante_modulos_p4', value: fabricante_modulos},
+        {id: 'c_modelo_modulos_p4', value: modelo_modulos},
+        {id: 'c_fabricante_inversor_p4', value: fabricante_inversor},
+        {id: 'c_modelo_inversor_p4', value: modelo_inversor},
+    ];
+
+    targets.forEach(t => {
+        const el = document.getElementById(t.id);
+        if (el) el.innerText = t.value;
+    });
+
+    const pagamentoEl = document.getElementById('c_forma_pagamento_detalhe_p2');
+    if (pagamentoEl) pagamentoEl.innerHTML = textoPagamento;
+}
+
+// Inicializa a formatação e pre-preenche valores ao carregar
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('valor').value = "40.000,00";
+    
+    calcular80_10_10();
+    
+    togglePaymentFields();
+    preencherDadosContrato(); 
+
+    if (typeof window.jspdf === 'undefined') {
+        errorMessage.innerText = "ERRO FATAL: As bibliotecas de PDF não foram carregadas. Verifique a conexão.";
+        errorMessage.style.display = 'block';
+    }
+});
+
+// ===========================================
+// FUNÇÃO PRINCIPAL DE GERAÇÃO DE PDF COM PAPEL TIMBRADO
+// ===========================================
+async function gerarPDFCompleto(shouldSave) {
+    errorMessage.style.display = 'none';
+    previewPlaceholder.style.display = 'none';
+    previewFrame.style.display = 'none';
+    preencherDadosContrato();
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4'); 
+        
+        const PDF_WIDTH = 210;
+        const PDF_HEIGHT = 297;
+
+        let isFirstPage = true;
+
+        for (const pageId of pagesToRender) {
+            const element = document.getElementById(pageId);
+            if (!element) continue;
+
+            element.style.display = 'block'; 
+            
+            const canvas = await html2canvas(element, {
+                scale: 2, 
+                useCORS: true,
+                allowTaint: true,
+                windowWidth: 1000,
+                backgroundColor: null 
+            });
+
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            const imgHeight = canvas.height * PDF_WIDTH / canvas.width;
+            
+            if (!isFirstPage) {
+                pdf.addPage([PDF_WIDTH, PDF_HEIGHT]);
+            }
+            
+            // --- AJUSTE DO PAPEL TIMBRADO ---
+            if (papelTimbradoBase64) {
+                // 1. Define a opacidade (0.0 a 1.0)
+                // Exemplo: 0.2 é bem clarinho (marca d'água), 1.0 é totalmente visível
+                pdf.saveGraphicsState();
+                pdf.setGState(new pdf.GState({opacity: 0.1})); 
+
+                // 2. Ajuste de Tamanho e Centralização
+                // Se quiser que ocupe a página toda: 0, 0, PDF_WIDTH, PDF_HEIGHT
+                // Se quiser menor e centralizado, mude os valores abaixo:
+                const larguraDesejada = 190; // mm
+                const alturaDesejada = 220;  // mm
+                const x = (PDF_WIDTH - larguraDesejada) / 2;
+                const y = (PDF_HEIGHT - alturaDesejada) / 2;
+
+                pdf.addImage(papelTimbradoBase64, 'PNG', x, y, larguraDesejada, alturaDesejada);
+                
+                // Restaura o estado gráfico para o texto não ficar transparente
+                pdf.restoreGraphicsState();
+            }
+            
+            // Adiciona o conteúdo do contrato (texto)
+            pdf.addImage(imgData, 'PNG', 0, 0, PDF_WIDTH, imgHeight, undefined, 'FAST');
+            
+            isFirstPage = false;
+        }
+
+        if (shouldSave) {
+            pdf.save(`Contrato_Fotovoltaico_${document.getElementById('nome').value.replace(/ /g, '_')}_COMPLETO.pdf`);
+        } else {
+            const pdfOutput = pdf.output('bloburl');
+            previewFrame.src = pdfOutput;
+            previewFrame.style.display = 'block';
+        }
+        
+    } catch (e) {
+        console.error("Erro fatal na geração do PDF:", e);
+        errorMessage.style.display = 'block';
+    }
+}
+</script>
+
+</body>
+</html>
