@@ -147,6 +147,12 @@
     <div><label>Modelo do Inversor</label><input id="modelo_inversor" value="2MPPT 220V 5 kW" oninput="preencherDadosContrato()"></div>
   </div>
 
+  <h4>Dados de Geração Estimada</h4>
+  <div class="input-group">
+    <div><label>Geração Média Mensal Estimada (kWh/mês)</label><input id="geracao_mensal" value="550" oninput="preencherDadosContrato()"></div>
+    <div><label>Variação da Geração (±%)</label><input id="variacao_geracao" value="5" oninput="preencherDadosContrato()"></div>
+  </div>
+
   <h4>Valores e Modo de Pagamento (Cláusula Quarta)</h4>
   <label>Valor Total do Contrato (R$)</label>
   <input id="valor" value="40.000,00" onblur="formatCurrency(this)" oninput="calcularPagamentos()">
@@ -155,7 +161,7 @@
   <select id="modo_pagamento" onchange="togglePaymentFields()">
     <option value="cartao">Cartão de Crédito (Entrada + Parcelas)</option>
     <option value="vista" selected>À Vista 80-10-10 (Transferência + Etapas)</option>
-    <option value="cartao_80_10_10">Cartão 80-10-10 </option>
+    <option value="cartao_80_10_10">Cartão 80-10-10 (Cartão em 3x)</option>
     <option value="financiamento">Financiamento</option>
   </select>
 
@@ -188,21 +194,21 @@
     <h5 style="color: #007bff; margin-top: 15px;">💳 80% no Cartão (Ato da Assinatura)</h5>
     <div class="input-group">
       <div><label>Valor (80% - Calculado)</label><input id="cartao_80_valor" value="32.000,00" class="readonly-field" readonly></div>
-      <div><label>Parcelas (80%)</label><input id="cartao_80_parcelas" value="1" placeholder="Nº de parcelas"></div>
+      <div><label>Parcelas (80%)</label><input id="cartao_80_parcelas" value="3" placeholder="Nº de parcelas"></div>
       <div><label>Valor Parcela (80%)</label><input id="cartao_80_valor_parcela" value="10.666,67" class="readonly-field" readonly></div>
     </div>
     
     <h5 style="color: #28a745; margin-top: 15px;">💳 10% no Cartão (Entrega Materiais)</h5>
     <div class="input-group">
       <div><label>Valor (10% - Calculado)</label><input id="cartao_10_entrega" value="4.000,00" class="readonly-field" readonly></div>
-      <div><label>Parcelas (10% entrega)</label><input id="cartao_10_entrega_parcelas" value="1" placeholder="Nº de parcelas"></div>
+      <div><label>Parcelas (10% entrega)</label><input id="cartao_10_entrega_parcelas" value="3" placeholder="Nº de parcelas"></div>
       <div><label>Valor Parcela (10% entrega)</label><input id="cartao_10_entrega_valor_parcela" value="1.333,33" class="readonly-field" readonly></div>
     </div>
     
     <h5 style="color: #ffc107; margin-top: 15px;">💳 10% no Cartão (Troca Medidor)</h5>
     <div class="input-group">
       <div><label>Valor (10% - Calculado)</label><input id="cartao_10_medidor" value="4.000,00" class="readonly-field" readonly></div>
-      <div><label>Parcelas (10% medidor)</label><input id="cartao_10_medidor_parcelas" value="1" placeholder="Nº de parcelas"></div>
+      <div><label>Parcelas (10% medidor)</label><input id="cartao_10_medidor_parcelas" value="3" placeholder="Nº de parcelas"></div>
       <div><label>Valor Parcela (10% medidor)</label><input id="cartao_10_medidor_valor_parcela" value="1.333,33" class="readonly-field" readonly></div>
     </div>
   </div>
@@ -311,7 +317,7 @@
         <p>9.3- Este contrato somente poderá ser modificado ou alterado mediante acordo por escrito entre as partes.</p>
         <p>9.4-Nenhuma das poderá ceder ou de qualquer forma transferir qualquer dos direitos e obrigações aqui previstos sem o consentimento por escrito da outra parte.</p>
         <p>9.5- As partes elegem o foro da comarca de <span id="c_foro_p4"></span>, para dirimir as controvérsias relativas ao presente Contrato, com exclusão de qualquer outro, por mais privilegiado de que seja.</p>
-        <p>9.6-Este Contrato estabelece o acordo definitivo das partes a respeito do seu objeto, revogando todos os entendimentos e acordos anteriores entre as partes.</p>
+        <p>9.6-Este Contrato estabelece o acordo definitivo das partes a respeito do seu objeto, revogando todos os entendimentos e acordos anteriores entre as parties.</p>
         <p>9.7- Todas as comunicações e notificações entre as partes relativas a este contrato deverão ser feitas por e-mail.</p>
     </div>
 
@@ -324,7 +330,7 @@
         <p>Observação: A garantia deste equipamento é diretamente com o fornecedor pela nota fiscal.</p>
 
         <h4>CLÁUSULA DÉCIMA PRIMEIRA - ACOMPANHAMENTO GERAÇÃO DE ENERGIA</h4>
-        <p>O sistema instalado terá capacidade de geração de energia média mensal de **550 kWh/mês** com uma variação de +5% e -5%. A potência do sistema solar fotovoltaico sofre redução gradual na sua capacidade de geração de energia elétrica, conforme curva de degradação previstas dos módulos / painéis fotovoltaicos: doze anos 90% da potencial nominal e 25 anos 70% de potência nominal.</p>
+        <p>O sistema instalado terá capacidade de geração de energia média mensal de **<span id="c_geracao_mensal_p4">550</span> kWh/mês** com uma variação de **+<span id="c_variacao_geracao_p4">5</span>% e -<span id="c_variacao_geracao2_p4">5</span>%**. A potência do sistema solar fotovoltaico sofre redução gradual na sua capacidade de geração de energia elétrica, conforme curva de degradação previstas dos módulos / painéis fotovoltaicos: doze anos 90% da potência nominal e 25 anos 70% de potência nominal.</p>
 
         <div class="assinaturas">
           <div>
@@ -607,6 +613,8 @@ function preencherDadosContrato() {
     const modelo_inversor = document.getElementById('modelo_inversor').value;
     
     const concessionaria = document.getElementById('concessionaria').value;
+    const geracao_mensal = document.getElementById('geracao_mensal').value;
+    const variacao_geracao = document.getElementById('variacao_geracao').value;
     
     const endereco_completo = `${endereco}, ${cidade}, ${estado}`; 
     const endereco_instalacao_completo = getEnderecoInstalacaoCompleto();
@@ -633,7 +641,10 @@ function preencherDadosContrato() {
         {id: 'c_modelo_modulos_p4', value: modelo_modulos},
         {id: 'c_fabricante_inversor_p4', value: fabricante_inversor},
         {id: 'c_modelo_inversor_p4', value: modelo_inversor},
-        {id: 'c_concessionaria_p2', value: concessionaria}
+        {id: 'c_concessionaria_p2', value: concessionaria},
+        {id: 'c_geracao_mensal_p4', value: geracao_mensal},
+        {id: 'c_variacao_geracao_p4', value: variacao_geracao},
+        {id: 'c_variacao_geracao2_p4', value: variacao_geracao}
     ];
 
     targets.forEach(t => {
@@ -679,6 +690,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cartao_80_parcelas').addEventListener('input', calcularParcelasCartao808010);
     document.getElementById('cartao_10_entrega_parcelas').addEventListener('input', calcularParcelasCartao808010);
     document.getElementById('cartao_10_medidor_parcelas').addEventListener('input', calcularParcelasCartao808010);
+    
+    // Adiciona listeners para campos de geração
+    document.getElementById('geracao_mensal').addEventListener('input', preencherDadosContrato);
+    document.getElementById('variacao_geracao').addEventListener('input', preencherDadosContrato);
 
     if (typeof window.jspdf === 'undefined') {
         errorMessage.innerText = "ERRO FATAL: As bibliotecas de PDF não foram carregadas. Verifique a conexão.";
@@ -734,7 +749,6 @@ async function gerarPDFCompleto(shouldSave) {
                 pdf.setGState(new pdf.GState({opacity: 0.1})); 
                 
                 // Ajuste de tamanho e posicionamento do papel timbrado
-                // Pode ajustar conforme necessidade
                 const larguraDesejada = 100; // mm (um pouco menor que a página)
                 const alturaDesejada = 100;  // mm
                 const x = (PDF_WIDTH - larguraDesejada) / 2; // Centralizado horizontalmente
